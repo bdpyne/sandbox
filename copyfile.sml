@@ -29,28 +29,22 @@ let
   val insertOpen  = explode "insert into advisers_tmp (rawdata) values ('"
   val insertClose = explode "');"
 
-  fun parse adviserList = 
+  fun parse rawlist = 
   let
-    fun processBlock([], closeToken) = []
-	  | processBlock(y::ys, closeToken) = 
-	    case y of
-		  closeToken => processBlock([], closeToken)
-		| _          => processBlock(ys, closeToken)
-
-    fun helper([], eliminate, startRecord)    = []
-	  | helper(x::xs, eliminate, startRecord) = 
-	    case x of
-          #"<"  => helper(xs, true, false)
-		| #";"  => insertClose @ #"\n"::helper(xs, false, true)
-        | _     => 
-          if eliminate = true then helper(xs, true, false)
-          else 
-		    if (Char.isPrint x) = true then 
-			  if startRecord = true then insertOpen @ x::helper(xs, false, false)
+    fun helper([], newRec, skip)    = []
+     |  helper(x::xs, newRec, skip) =
+	      case x of
+		    #"<" => helper(xs, false, true)
+	      | #";" => insertClose @ #"\n"::helper(xs, true, false)
+		  | #"\n" => helper(xs, newRec, skip)
+		  | #"\r" => helper(xs, newRec, skip)
+		  | _    => 
+		    if skip = true then helper(xs, false, true)
+		    else 
+			  if newRec = true then insertOpen @ x::helper(xs, false, false)
 			  else x::helper(xs, false, false)
-			else helper(xs, eliminate, false)
   in
-    helper(adviserList, false, true)
+    helper(rawlist, true, false)
   end
 
 
