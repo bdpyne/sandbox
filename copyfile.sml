@@ -1,28 +1,18 @@
 fun copyfile(copythis, tothis) =
 let
+  (****************************************************************************
+                            Functions
+  ****************************************************************************)
   fun getcontents filename =
   let
     val ins  = TextIO.openIn filename
 
-    fun helper(elem: char option, eliminate: bool) = 
+    fun helper(elem: char option) = 
       case elem of
            NONE       => (TextIO.closeIn ins; [])
-         | SOME(elem) =>
-             if elem = #">" then
-               #"\n"::helper((TextIO.input1 ins), false)
-             else
-               if elem = #"<" then
-                 helper((TextIO.input1 ins), true)
-               else 
-                 if elem = #"\n" then
-                   helper((TextIO.input1 ins), eliminate)
-                 else
-                   if eliminate = true then
-                     helper((TextIO.input1 ins), true)
-                   else
-                     elem::helper((TextIO.input1 ins), false)
+         | SOME(elem) => elem::helper(TextIO.input1 ins)
   in
-    helper((TextIO.input1 ins), false) 
+    helper(TextIO.input1 ins) 
   end
 
   fun putcontents(contents, filename) = 
@@ -36,10 +26,41 @@ let
     helper contents
   end
 
-  fun toStringList charlist = implode charlist;
+  val insertOpen  = explode "insert into advisers_tmp (rawdata) values ('"
+  val insertClose = explode "');"
+
+  fun parse adviserList = 
+  let
+    fun processBlock([], closeToken) = []
+	  | processBlock(y::ys, closeToken) = 
+	    case y of
+		  closeToken => processBlock([], closeToken)
+		| _          => processBlock(ys, closeToken)
+
+    fun helper([], eliminate, startRecord)    = []
+	  | helper(x::xs, eliminate, startRecord) = 
+	    case x of
+          #"<"  => helper(xs, true, false)
+		| #";"  => insertClose @ #"\n"::helper(xs, false, true)
+        | _     => 
+          if eliminate = true then helper(xs, true, false)
+          else 
+		    if (Char.isPrint x) = true then 
+			  if startRecord = true then insertOpen @ x::helper(xs, false, false)
+			  else x::helper(xs, false, false)
+			else helper(xs, eliminate, false)
+  in
+    helper(adviserList, false, true)
+  end
+
+
+  (****************************************************************************
+                            Values
+  ****************************************************************************)
+  val advisers = getcontents copythis
+  val cleanedAdvisers = parse advisers
 in
-  putcontents((getcontents copythis), tothis)
-(*  String.tokens (fn: x => if x = #"\n" then true else false) (implode (getcontents copythis)) *)
+  putcontents(cleanedAdvisers, tothis)
 end;
 
-copyfile("AdviserList.txt", "AdviserNames.txt");
+copyfile("Advisers.txt", "AdviserNames.txt");
