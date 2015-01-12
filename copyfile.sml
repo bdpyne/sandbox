@@ -26,8 +26,8 @@ let
     helper contents
   end
 
-  val insertOpen  = explode "insert into advisers_tmp (rawdata) values ('"
-  val insertClose = explode "');"
+  val insertOpen  = explode "insert into advisers_tmp (rawval) values (rtrim('"
+  val insertClose = explode "'));"
 
   fun parse rawlist = 
   let
@@ -38,6 +38,7 @@ let
 	      | #";"  => insertClose @ #"\n"::helper(xs, true, false)
 		  | #"\n" => helper(xs, newRec, skip)
 		  | #"\r" => helper(xs, newRec, skip)
+		  | #"'"  => x::#"'"::helper(xs, false, false)
 		  | _     => 
 		    if skip = true then helper(xs, false, true)
 		    else 
@@ -57,4 +58,4 @@ in
   putcontents(cleanedAdvisers, tothis)
 end;
 
-copyfile("Advisers.txt", "AdviserNames.txt");
+copyfile("Advisers.txt", "AdviserNames.sql");
