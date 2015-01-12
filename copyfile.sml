@@ -34,11 +34,11 @@ let
     fun helper([], newRec, skip)    = []
      |  helper(x::xs, newRec, skip) =
 	      case x of
-		    #"<" => helper(xs, false, true)
-	      | #";" => insertClose @ #"\n"::helper(xs, true, false)
+		    #"<"  => helper(xs, false, true)
+	      | #";"  => insertClose @ #"\n"::helper(xs, true, false)
 		  | #"\n" => helper(xs, newRec, skip)
 		  | #"\r" => helper(xs, newRec, skip)
-		  | _    => 
+		  | _     => 
 		    if skip = true then helper(xs, false, true)
 		    else 
 			  if newRec = true then insertOpen @ x::helper(xs, false, false)
