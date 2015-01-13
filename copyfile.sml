@@ -26,26 +26,21 @@ let
     helper contents
   end
 
-  val insertOpen  = explode "insert into advisers_tmp (rawval) values (rtrim('"
-  val insertClose = explode "'));"
+  val insertOpen  = explode "insert into advisers_tmp (rawval) values ('"
+  val insertClose = explode "');"
 
   fun parse rawlist = 
   let
-    fun helper([], newRec, skip)    = []
-     |  helper(x::xs, newRec, skip) =
+    fun helper([], skip)    = []
+     |  helper(x::xs, skip) =
 	      case x of
-		    #"<"  => helper(xs, false, true)
-	      | #";"  => insertClose @ #"\n"::helper(xs, true, false)
-		  | #"\n" => helper(xs, newRec, skip)
-		  | #"\r" => helper(xs, newRec, skip)
-		  | #"'"  => x::#"'"::helper(xs, false, false)
+		    #"<"  => insertOpen @ helper(xs, false)
+                  | #">"  => insertClose @ #"\n"::helper(xs, true) 
 		  | _     => 
-		    if skip = true then helper(xs, false, true)
-		    else 
-			  if newRec = true then insertOpen @ x::helper(xs, false, false)
-			  else x::helper(xs, false, false)
+		    if skip = true then helper(xs, skip)
+		    else x::helper(xs, skip)
   in
-    helper(rawlist, true, false)
+    helper(rawlist, true)
   end
 
 
